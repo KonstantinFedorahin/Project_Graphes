@@ -1,0 +1,29 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:GraphBuilder.UI.ViewModels"
+        x:Class="GraphBuilder.UI.MainWindow"
+        Title="Graph Builder"
+        Width="800"
+        Height="600">
+    
+    <Design.DataContext>
+        <vm:MainWindowViewModel />
+    </Design.DataContext>
+    
+    <Grid RowDefinitions="Auto, *">
+        <!-- Панель управления -->
+        <StackPanel Orientation="Horizontal" Margin="10" Spacing="10">
+            <TextBox Watermark="Введите функцию (например: x^2)" Width="200" />
+            <Button Content="Добавить" />
+            <ComboBox Width="100" SelectedIndex="0">
+                <ComboBoxItem Content="График" />
+                <ComboBoxItem Content="Граф" />
+            </ComboBox>
+        </StackPanel>
+        
+        <!-- Область рисования -->
+        <Canvas Grid.Row="1" Background="White" Name="DrawingCanvas" />
+    </Grid>
+</Window>
