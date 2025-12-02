@@ -13,17 +13,17 @@
     </Design.DataContext>
     
     <Grid RowDefinitions="Auto, *">
-        <!-- Панель управления -->
-        <StackPanel Orientation="Horizontal" Margin="10" Spacing="10">
-            <TextBox Watermark="Введите функцию (например: x^2)" Width="200" />
-            <Button Content="Добавить" />
-            <ComboBox Width="100" SelectedIndex="0">
-                <ComboBoxItem Content="График" />
-                <ComboBoxItem Content="Граф" />
-            </ComboBox>
-        </StackPanel>
-        
+        <Panel Background="Bisque">
+            <TextBlock Text="中国Desmos" FontSize="24" FontWeight="Bold" VerticalAlignment="Top" HorizontalAlignment="Center" FontFamily="Courier New"/>
+            <!-- Панель управления -->
+            <Border Padding="0, 0, 0, 10">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" Orientation="Horizontal" Margin="0, 40, 0, 0" Spacing="10">
+                    <TextBox Watermark="Введите функцию (например: x^2)" Width="200" />
+                    <Button Content="Добавить" />
+                </StackPanel>
+            </Border>
+        </Panel>
         <!-- Область рисования -->
-        <Canvas Grid.Row="1" Background="White" Name="DrawingCanvas" />
+        <Canvas Grid.Row="1" Background="BlanchedAlmond" Name="DrawingCanvas" />
     </Grid>
 </Window>
