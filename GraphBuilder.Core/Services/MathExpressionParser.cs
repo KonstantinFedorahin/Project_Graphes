@@ -1,5 +1,7 @@
-using System.Text.RegularExpressions;
+using System;
+using System.Collections.Generic;
 using GraphBuilder.Core.Models;
+using org.mariuszgromada.math.mxparser;
 
 namespace GraphBuilder.Core.Services;
 
@@ -7,49 +9,56 @@ public class MathExpressionParser : IFunctionParser
 {
     public Func<double, double?> Parse(string expression)
     {
-        // Упрощенный парсер - в реальном проекте используйте библиотеки вроде NCalc
-        var normalized = expression.ToLower()
+        var normalized = expression
             .Replace(" ", "")
-            .Replace("^", "**");
-            
+            .Replace("**", "^");
+        
+        if (normalized.Substring(0, 2) == "y=")
+        {
+            normalized = normalized.Substring(2);
+        }
+
+        // Prepare argument 'x'
+        var xArg = new Argument("x");
+
+        // The expression is being created once (performance matter)
+        var expr = new Expression(normalized, xArg);
+
         return x =>
         {
             try
             {
-                var expr = normalized.Replace("x", $"({x})");
-                // Здесь должна быть реальная логика парсинга
-                // Для начала можно использовать простой eval или подключить NCalc
-                return EvaluateSimpleExpression(expr);
+                xArg.setArgumentValue(x);
+                var result = expr.calculate();
+
+                if (double.IsNaN(result) || double.IsInfinity(result))
+                    return null;
+
+                return result;
             }
             catch
             {
-                return null; // Функция не определена в точке
+                return null;
             }
         };
     }
 
     public IEnumerable<GraphPoint> CalculatePoints(
-        Func<double, double?> function, 
-        double minX, 
-        double maxX, 
+        Func<double, double?> function,
+        double minX,
+        double maxX,
         double step)
     {
+        if (step <= 0)
+            step = 1;
+
         for (double x = minX; x <= maxX; x += step)
         {
             var y = function(x);
-            if (y.HasValue && !double.IsInfinity(y.Value) && !double.IsNaN(y.Value))
+            if (y.HasValue)
             {
                 yield return new GraphPoint(x, y.Value);
             }
         }
-    }
-
-    private double? EvaluateSimpleExpression(string expression)
-    {
-        // Заглушка - в реальном проекте используйте:
-        // - NCalc
-        // - DynamicExpresso
-        // - Roslyn для компиляции выражений
-        return expression.Length; // временная заглушка
     }
 }

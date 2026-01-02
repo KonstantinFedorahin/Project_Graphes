@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using ReactiveUI.Avalonia;
 using System;
 
 namespace GraphBuilder.UI;
@@ -16,6 +17,7 @@ class Program
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            .UseReactiveUI() //reactive ui connection (button error fix)
             .WithInterFont()
             .LogToTrace();
 }
