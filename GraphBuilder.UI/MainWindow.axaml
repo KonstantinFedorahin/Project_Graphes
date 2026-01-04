@@ -59,7 +59,8 @@
 
         <!-- Main drawing area -->
         <Border Background="White">
-            <controls:CoordinatePlane />
+            <controls:CoordinatePlane 
+                Points="{Binding Points}" />
         </Border>
     </DockPanel>
 

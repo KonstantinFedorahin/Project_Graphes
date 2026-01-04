@@ -1,11 +1,14 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reactive;
 using System.Runtime.CompilerServices;
 using GraphBuilder.Core.Models;
 using GraphBuilder.Core.Services;
+using GraphBuilder.UI.Controls;
 using ReactiveUI;
+using Avalonia;
 using Avalonia.Threading;
 using System.Linq;
 
@@ -16,6 +19,18 @@ public class MainWindowViewModel : INotifyPropertyChanged
 {
     private readonly IFunctionParser _functionParser;
     private string _currentExpression = string.Empty;
+
+    private IReadOnlyList<Point>? _points;
+    public IReadOnlyList<Point>? Points
+    {
+        get => _points;
+        set
+        {
+            _points = value;
+            OnPropertyChanged();
+        }
+    }
+
 
     public ReactiveCommand<Unit, Unit> ButtonCommand { get; }
     
@@ -42,16 +57,19 @@ public class MainWindowViewModel : INotifyPropertyChanged
         {
             var function = _functionParser.Parse(CurrentExpression);
 
-            var points = _functionParser.CalculatePoints(
+            var calculated = _functionParser.CalculatePoints(
                 function,
-                0,
-                2,
-                1
+                -20,
+                5,
+                0.5f
             );
 
-            foreach(var el in points.ToList())
-                Console.WriteLine(el);
+            // Here you need to pass the points into Coordinate Plane class to render a function.
+            Points = calculated
+                .Select(p => new Point(p.X, p.Y))
+                .ToList();
         },
+
         outputScheduler: RxApp.MainThreadScheduler);
     }
     

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -7,8 +8,23 @@ namespace GraphBuilder.UI.Controls;
 
 public class CoordinatePlane : Control
 {
+    public static readonly StyledProperty<IReadOnlyList<Point>?> PointsProperty =
+        AvaloniaProperty.Register<CoordinatePlane, IReadOnlyList<Point>?>(nameof(Points));
+
+    public IReadOnlyList<Point>? Points
+    {
+        get => GetValue(PointsProperty);
+        set => SetValue(PointsProperty, value);
+    }
+
     public double Scale { get; set; } = 50; // пикселей на единицу
     public Point Offset { get; set; } = new(0, 0);
+
+    static CoordinatePlane()
+    {
+        // перерисовываться при изменении Points
+        AffectsRender<CoordinatePlane>(PointsProperty);
+    }
 
     public override void Render(DrawingContext context)
     {
@@ -23,7 +39,8 @@ public class CoordinatePlane : Control
         DrawGrid(context, bounds, center);
         DrawAxes(context, bounds, center);
 
-        // GRAPH DUMMY
+        if (Points is null || Points.Count < 2)
+            return;
 
         var geometry = new StreamGeometry();
 
@@ -31,12 +48,10 @@ public class CoordinatePlane : Control
         {
             bool first = true;
 
-            for (double x = -10; x <= 10; x += 0.01)
+            foreach (var p in Points)
             {
-                double y = Math.Tan(x);
-
-                var px = center.X + x * Scale;
-                var py = center.Y - y * Scale;
+                var px = center.X + p.X * Scale;
+                var py = center.Y - p.Y * Scale;
 
                 if (first)
                 {
@@ -44,12 +59,13 @@ public class CoordinatePlane : Control
                     first = false;
                 }
                 else
+                {
                     ctx.LineTo(new Point(px, py));
+                }
             }
         }
 
         context.DrawGeometry(null, new Pen(Brushes.Red, 2), geometry);
-
     }
 
     private void DrawAxes(DrawingContext ctx, Rect bounds, Point center)
