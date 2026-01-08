@@ -4,8 +4,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:GraphBuilder.UI.ViewModels"
         xmlns:controls="using:GraphBuilder.UI.Controls"
+        xmlns:converters="using:Avalonia.Data.Converters"
         x:Class="GraphBuilder.UI.MainWindow"
-        x:DataType="vm:MainWindowViewModel"
         Title="Graph Builder"
         Width="1280"
         Height="720">
@@ -14,22 +14,20 @@
 		<vm:MainWindowViewModel />
 	</Design.DataContext>
 
+	<Window.Resources>
+		<converters:StringIsNotNullOrEmptyConverter x:Key="StringIsNotNullOrEmptyConverter" />
+	</Window.Resources>
+
 	<DockPanel>
 		<!-- Top header -->
 		<Panel DockPanel.Dock="Top" Background="rgba(122, 122, 122, 1)" Height="50">
-			<TextBlock Text="Desmos Clone"
+			<TextBlock Text="Graph Builder"
                        FontSize="24"
                        FontWeight="Bold"
                        HorizontalAlignment="Center"
                        Margin="0,10,0,10"
                        Foreground="rgba(255, 255, 255, 1)"
                        FontFamily="JetBrains Mono"/>
-
-			<StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Center"
-                        Margin="0,45,0,0"
-                        Spacing="10">
-			</StackPanel>
 		</Panel>
 
 		<!-- Left side panel -->
@@ -38,7 +36,7 @@
                 Background="rgba(223, 223, 223, 1)"
                 Padding="10">
 			<StackPanel>
-				<TextBlock Text="Functions List"
+				<TextBlock Text="Functions"
                            FontSize="18"
                            FontWeight="Bold"
                            HorizontalAlignment="Left"
@@ -51,7 +49,7 @@
                         CornerRadius="4"
                         Padding="5"
                         Margin="0,0,0,10"
-                        Visibility="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        IsVisible="{Binding ErrorMessage, Converter={x:Static converters:StringIsNotNullOrEmptyConverter.Instance}}">
 					<TextBlock Text="{Binding ErrorMessage}"
                                Foreground="White"
                                FontWeight="Bold"
@@ -65,38 +63,21 @@
                          Text="{Binding CurrentExpression}"
                          Margin="0, 0, 0, 10" />
 
-				<Button Content="Plot Graph"
+				<Button Content="Plot"
                         Command="{Binding ButtonCommand}"
-                        Foreground="#000000"
-                        Margin="0,0,0,20"/>
-
-				<!-- Saved functions list -->
-				<TextBlock Text="Saved Functions:"
-                           FontSize="14"
-                           FontWeight="Bold"
-                           HorizontalAlignment="Left"
-                           Margin="0,0,0,5"
-                           FontFamily="JetBrains Mono"
-                           Foreground="#000000"/>
+                        Foreground="#000000"/>
 
 				<ListBox ItemsSource="{Binding Functions}"
-                         MaxHeight="400"
+                         MaxHeight="500"
                          Background="Transparent"
-                         BorderThickness="0">
+                         BorderThickness="0"
+                         Margin="0,20,0,0">
 					<ListBox.ItemTemplate>
 						<DataTemplate>
-							<StackPanel Orientation="Horizontal"
-                                        Margin="0,2">
-								<Rectangle Width="12"
-                                           Height="12"
-                                           Fill="{Binding Color}"
-                                           Margin="0,0,5,0"
-                                           VerticalAlignment="Center"/>
-								<TextBlock Text="{Binding Expression}"
-                                           FontFamily="JetBrains Mono"
-                                           FontSize="12"
-                                           VerticalAlignment="Center"/>
-							</StackPanel>
+							<TextBlock Text="{Binding Expression}"
+                                       FontFamily="JetBrains Mono"
+                                       FontSize="12"
+                                       Margin="0,2"/>
 						</DataTemplate>
 					</ListBox.ItemTemplate>
 				</ListBox>
@@ -106,9 +87,7 @@
 		<!-- Main drawing area -->
 		<Border Background="White">
 			<controls:CoordinatePlane
-                Points="{Binding Points}"
-                Scale="40"
-                Offset="10, 10"/>
+                Points="{Binding Points}" />
 		</Border>
 	</DockPanel>
 </Window>
