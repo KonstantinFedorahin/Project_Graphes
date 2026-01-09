@@ -11,7 +11,6 @@ using ReactiveUI;
 using Avalonia;
 using Avalonia.Threading;
 using System.Linq;
-using System.Reactive.Linq;
 
 namespace GraphBuilder.UI.ViewModels;
 
@@ -20,8 +19,8 @@ public class MainWindowViewModel : INotifyPropertyChanged
     private readonly IFunctionParser _functionParser;
     private string _currentExpression = string.Empty;
     private string _errorMessage = string.Empty;
-
     private IReadOnlyList<Point>? _points;
+
     public IReadOnlyList<Point>? Points
     {
         get => _points;
@@ -58,7 +57,6 @@ public class MainWindowViewModel : INotifyPropertyChanged
             {
                 _currentExpression = value;
                 OnPropertyChanged();
-                ClearError();
             }
         }
     }
@@ -69,66 +67,72 @@ public class MainWindowViewModel : INotifyPropertyChanged
 
         ButtonCommand = ReactiveCommand.Create(() =>
         {
+            // Clear previous error
+            ErrorMessage = string.Empty;
+
+            // Check if expression is empty
+            if (string.IsNullOrWhiteSpace(CurrentExpression))
+            {
+                ErrorMessage = "Please enter a mathematical expression";
+                return;
+            }
+
+            // Validate expression
+            if (!_functionParser.ValidateExpression(CurrentExpression, out string validationError))
+            {
+                ErrorMessage = $"Invalid expression: {validationError}";
+                return;
+            }
+
             try
             {
-                ErrorMessage = string.Empty;
+                // Parse the expression
+                var function = _functionParser.Parse(CurrentExpression);
 
-                if (string.IsNullOrWhiteSpace(CurrentExpression))
+                if (function == null)
                 {
-                    ErrorMessage = "Enter a mathematical expression";
+                    ErrorMessage = "Failed to parse the expression";
                     return;
                 }
 
-                var function = _functionParser.Parse(CurrentExpression);
-
+                // Calculate points
                 var calculated = _functionParser.CalculatePoints(
                     function,
                     -20,
                     5,
                     0.5f
-                );
+                ).ToList();
 
-                // Here you need to pass the points into Coordinate Plane class to render a function.
+                // Check if we got any points
+                if (!calculated.Any())
+                {
+                    ErrorMessage = "No valid points could be calculated for this expression";
+                    return;
+                }
+
+                // Update points for rendering
                 Points = calculated
                     .Select(p => new Point(p.X, p.Y))
                     .ToList();
 
-                if (Points != null && Points.Count > 0)
-                {
-                    AddFunction();
-                }
-            }
-            catch (ArgumentException ex)
-            {
-                ErrorMessage = ex.Message;
-                Points = null;
+                // Add to functions list if successful
+                AddFunction();
             }
             catch (Exception ex)
             {
                 ErrorMessage = $"Error: {ex.Message}";
-                Points = null;
             }
         },
-
         outputScheduler: RxApp.MainThreadScheduler);
     }
 
     public void AddFunction()
     {
-        if (!string.IsNullOrWhiteSpace(CurrentExpression))
+        if (!string.IsNullOrWhiteSpace(CurrentExpression) && string.IsNullOrEmpty(ErrorMessage))
         {
-            if (!Functions.Any(f => f.Expression == CurrentExpression))
-            {
-                Functions.Add(new Function { Expression = CurrentExpression });
-            }
+            Functions.Add(new Function { Expression = CurrentExpression });
             CurrentExpression = string.Empty;
-            ErrorMessage = string.Empty;
         }
-    }
-
-    private void ClearError()
-    {
-        ErrorMessage = string.Empty;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

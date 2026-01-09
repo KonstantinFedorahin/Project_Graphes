@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using GraphBuilder.Core.Models;
 using org.mariuszgromada.math.mxparser;
 
@@ -11,52 +12,45 @@ public class MathExpressionParser : IFunctionParser
     {
         if (string.IsNullOrWhiteSpace(expression))
         {
-            throw new ArgumentException("The expression cannot be empty", nameof(expression));
+            return x => null;
         }
 
-        var normalized = expression
-            .Replace(" ", "")
-            .Replace("**", "^");
+        var normalized = NormalizeExpression(expression);
 
-        if (normalized.Length >= 2 && normalized.Substring(0, 2) == "y=")
+        if (!IsValidExpression(normalized, out string validationError))
         {
-            normalized = normalized.Substring(2);
-        }
-
-        if (!normalized.Contains("x", StringComparison.OrdinalIgnoreCase))
-        {
-            if (double.TryParse(normalized, out double constant))
-            {
-                return x => constant;
-            }
-            else
-            {
-                throw new ArgumentException($"The expression must contain the variable 'x'. Result: '{expression}'",
-                    nameof(expression));
-            }
+            Console.WriteLine($"Validation error: {validationError}");
+            return x => null;
         }
 
         try
         {
-            CheckExpressionSyntax(normalized);
-
-            // Prepare argument 'x'
-            var xArg = new Argument("x");
-
-            // The expression is being created once (performance matter)
-            var expr = new Expression(normalized, xArg);
-
-            if (!expr.checkSyntax())
+            // Handle constant numbers
+            if (IsConstantNumber(normalized))
             {
-                var errorMsg = GetExpressionError(expr);
-                throw new ArgumentException($"Incorrect expression: {errorMsg}", nameof(expression));
+                if (double.TryParse(normalized, out double constant))
+                {
+                    return x => constant;
+                }
+                return x => null;
             }
 
-            xArg.setArgumentValue(0);
-            var testResult = expr.calculate();
-            if (double.IsNaN(testResult) || double.IsInfinity(testResult))
+            // Handle identity function f(x) = x
+            if (normalized == "x")
             {
+                return x => x;
+            }
 
+            // Prepare argument and expression
+            var xArg = new Argument("x");
+            var expr = new Expression(normalized, xArg);
+
+            // Check syntax with mXparser
+            if (!expr.checkSyntax())
+            {
+                var error = expr.getErrorMessage();
+                Console.WriteLine($"Syntax error: {error}");
+                return x => null;
             }
 
             return x =>
@@ -66,7 +60,9 @@ public class MathExpressionParser : IFunctionParser
                     xArg.setArgumentValue(x);
                     var result = expr.calculate();
 
-                    if (double.IsNaN(result) || double.IsInfinity(result))
+                    if (double.IsNaN(result) ||
+                        double.IsInfinity(result) ||
+                        double.IsInfinity(-result))
                         return null;
 
                     return result;
@@ -77,10 +73,10 @@ public class MathExpressionParser : IFunctionParser
                 }
             };
         }
-        catch (Exception ex) when (ex is not ArgumentException)
+        catch (Exception ex)
         {
-            throw new ArgumentException($"Error parsing expression '{expression}': {ex.Message}",
-                nameof(expression), ex);
+            Console.WriteLine($"Parsing error for '{expression}': {ex.Message}");
+            return x => null;
         }
     }
 
@@ -91,79 +87,158 @@ public class MathExpressionParser : IFunctionParser
         double step)
     {
         if (step <= 0)
-            step = 1;
+            step = 0.1;
 
-        if (minX > maxX)
+        if (maxX <= minX)
         {
-            throw new ArgumentException($"minX ({minX}) cannot be greater than maxX ({maxX})");
+            (minX, maxX) = (maxX, minX);
         }
 
-        if (step > (maxX - minX))
+        // Limit the range for safety
+        if (maxX - minX > 1000)
         {
-            throw new ArgumentException($"The step ({step}) is too large for the range [{minX}, {maxX}]");
+            step = Math.Max(step, (maxX - minX) / 1000);
         }
 
-        for (double x = minX; x <= maxX; x += step)
+        for (double x = minX; x <= maxX + step / 2; x += step)
         {
             var y = function(x);
             if (y.HasValue)
             {
-                yield return new GraphPoint(x, y.Value);
+                // Filter out extreme values
+                if (Math.Abs(y.Value) < 1e6)
+                {
+                    yield return new GraphPoint(x, y.Value);
+                }
             }
         }
     }
 
-    private void CheckExpressionSyntax(string expression)
+    private string NormalizeExpression(string expression)
     {
-        if (string.IsNullOrEmpty(expression))
-            throw new ArgumentException("The expression is empty");
+        var normalized = expression
+            .Replace(" ", "")
+            .Replace("**", "^")
+            .Replace(",", ".")
+            .ToLower();
 
-        string[] doubleOperators = { "++", "--", "**", "//", "^^", "+-", "-+", ".." };
-        foreach (var op in doubleOperators)
+        // Remove function prefixes if present
+        if (normalized.StartsWith("y=") || normalized.StartsWith("f(x)="))
         {
-            if (expression.Contains(op))
-                throw new ArgumentException($"Incorrect operator '{op}' in expression");
+            normalized = normalized.Substring(normalized.IndexOf('=') + 1);
         }
 
+        return normalized;
+    }
+
+    private bool IsValidExpression(string expression, out string errorMessage)
+    {
+        errorMessage = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(expression))
+        {
+            errorMessage = "Expression cannot be empty";
+            return false;
+        }
+
+        // Check for forbidden characters
+        var forbidden = new[] { ';', '{', '}', '[', ']', '`', '~', '|', '\\' };
+        if (expression.IndexOfAny(forbidden) >= 0)
+        {
+            errorMessage = "Expression contains forbidden characters";
+            return false;
+        }
+
+        // Check bracket balance
         int bracketCount = 0;
         foreach (char c in expression)
         {
             if (c == '(') bracketCount++;
-            else if (c == ')') bracketCount--;
-
+            if (c == ')') bracketCount--;
             if (bracketCount < 0)
-                throw new ArgumentException("Incorrect placement of parentheses");
+            {
+                errorMessage = "Mismatched parentheses: closing bracket without opening";
+                return false;
+            }
         }
 
         if (bracketCount != 0)
-            throw new ArgumentException("Not all parentheses are closed");
-
-        foreach (char c in expression)
         {
-            if (!IsValidMathChar(c))
+            errorMessage = "Mismatched parentheses: not all brackets are closed";
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool IsConstantNumber(string expression)
+    {
+        // Check for integer numbers
+        if (int.TryParse(expression, out _))
+            return true;
+
+        // Check for decimal numbers
+        if (double.TryParse(expression, out _))
+            return true;
+
+        // Check for numbers with leading minus
+        if (expression.StartsWith("-"))
+        {
+            return double.TryParse(expression.Substring(1), out _);
+        }
+
+        // Check for decimal numbers without leading zero (.5)
+        if (expression.StartsWith(".") || expression.StartsWith("-."))
+        {
+            string number = expression.StartsWith("-.") ? expression.Substring(2) : expression.Substring(1);
+            return double.TryParse(number, out _);
+        }
+
+        return false;
+    }
+
+    // Public validation method for UI
+    public bool ValidateExpression(string expression, out string errorMessage)
+    {
+        errorMessage = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(expression))
+        {
+            errorMessage = "Expression cannot be empty";
+            return false;
+        }
+
+        var normalized = NormalizeExpression(expression);
+
+        if (!IsValidExpression(normalized, out errorMessage))
+        {
+            return false;
+        }
+
+        try
+        {
+            // Simple expressions are always valid
+            if (IsConstantNumber(normalized) || normalized == "x")
             {
-                throw new ArgumentException($"Invalid symbol '{c}' in expression");
+                return true;
             }
+
+            // Check with mXparser for complex expressions
+            var xArg = new Argument("x");
+            var expr = new Expression(normalized, xArg);
+
+            if (!expr.checkSyntax())
+            {
+                errorMessage = expr.getErrorMessage();
+                return false;
+            }
+
+            return true;
         }
-    }
-
-    private bool IsValidMathChar(char c)
-    {
-        return char.IsDigit(c) ||
-               char.IsLetter(c) ||
-               "xXyY+-*/^().,=<>!&| ".Contains(c) ||
-               c == '?' || c == 'å' || c == 'Å';
-    }
-
-    private string GetExpressionError(Expression expr)
-    {
-        var errorMessage = expr.getErrorMessage()?.Trim();
-
-        if (string.IsNullOrEmpty(errorMessage))
+        catch (Exception ex)
         {
-            return "Unknown syntax error";
+            errorMessage = $"Validation error: {ex.Message}";
+            return false;
         }
-
-        return errorMessage;
     }
 }

@@ -4,8 +4,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:GraphBuilder.UI.ViewModels"
         xmlns:controls="using:GraphBuilder.UI.Controls"
-        xmlns:converters="using:Avalonia.Data.Converters"
+        xmlns:system="clr-namespace:System;assembly=System.Runtime"
         x:Class="GraphBuilder.UI.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
         Title="Graph Builder"
         Width="1280"
         Height="720">
@@ -13,10 +14,6 @@
 	<Design.DataContext>
 		<vm:MainWindowViewModel />
 	</Design.DataContext>
-
-	<Window.Resources>
-		<converters:StringIsNotNullOrEmptyConverter x:Key="StringIsNotNullOrEmptyConverter" />
-	</Window.Resources>
 
 	<DockPanel>
 		<!-- Top header -->
@@ -36,7 +33,7 @@
                 Background="rgba(223, 223, 223, 1)"
                 Padding="10">
 			<StackPanel>
-				<TextBlock Text="Functions"
+				<TextBlock Text="Function List"
                            FontSize="18"
                            FontWeight="Bold"
                            HorizontalAlignment="Left"
@@ -44,40 +41,43 @@
                            FontFamily="JetBrains Mono"
                            Foreground="#000000"/>
 
-				<!-- Error message display -->
-				<Border Background="#FFF44336"
-                        CornerRadius="4"
-                        Padding="5"
+				<!-- Error Message Display - Option 1: Binding to Visibility -->
+				<Border Background="#FFCDD2"
+                        Padding="8"
                         Margin="0,0,0,10"
-                        IsVisible="{Binding ErrorMessage, Converter={x:Static converters:StringIsNotNullOrEmptyConverter.Instance}}">
+                        CornerRadius="4"
+                        IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}">
 					<TextBlock Text="{Binding ErrorMessage}"
-                               Foreground="White"
-                               FontWeight="Bold"
-                               TextWrapping="Wrap"
-                               FontSize="12"/>
+                               Foreground="#D32F2F"
+                               FontSize="12"
+                               TextWrapping="Wrap"/>
 				</Border>
 
+				<!-- Function Input -->
 				<TextBox Width="200"
-                         Watermark="Enter function (e.g., x^2 + sin(x))"
+                         Watermark="Enter function (e.g., x^2, sin(x), 5)"
                          Foreground="#000000"
                          Text="{Binding CurrentExpression}"
-                         Margin="0, 0, 0, 10" />
+                         Margin="0,0,0,10" />
 
-				<Button Content="Plot"
+				<!-- Calculate Button -->
+				<Button Content="Calculate"
                         Command="{Binding ButtonCommand}"
-                        Foreground="#000000"/>
+                        Foreground="#000000"
+                        Margin="0,0,0,10"/>
+
+				<!-- Function List -->
+				<TextBlock Text="Saved Functions:"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Margin="0,10,0,5"/>
 
 				<ListBox ItemsSource="{Binding Functions}"
-                         MaxHeight="500"
-                         Background="Transparent"
-                         BorderThickness="0"
-                         Margin="0,20,0,0">
+                         Height="200">
 					<ListBox.ItemTemplate>
 						<DataTemplate>
 							<TextBlock Text="{Binding Expression}"
-                                       FontFamily="JetBrains Mono"
-                                       FontSize="12"
-                                       Margin="0,2"/>
+                                       Margin="2"/>
 						</DataTemplate>
 					</ListBox.ItemTemplate>
 				</ListBox>
