@@ -85,9 +85,11 @@
 		</Border>
 
 		<!-- Main drawing area -->
-		<Border Background="White">
+		<Border Background="White"
+                        ClipToBounds="True">
 			<controls:CoordinatePlane
-                Points="{Binding Points}" />
+                                Points="{Binding Points}" 
+                                Background="White"/>
 		</Border>
 	</DockPanel>
 </Window>

@@ -1,7 +1,7 @@
 using System;
 using Avalonia.Media;
 
-namespace GraphBuilder.Core.Models;
+namespace GraphBuilder.Domain.Models;
     
 public class Function
 {

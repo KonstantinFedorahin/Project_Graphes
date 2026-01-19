@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using GraphBuilder.Core.Models;
+using GraphBuilder.Domain.Models;
+using GraphBuilder.Application.Interfaces;
 using org.mariuszgromada.math.mxparser;
 
-namespace GraphBuilder.Core.Services;
+namespace GraphBuilder.Infrastructure.Parsing;
 
 public class MathExpressionParser : IFunctionParser
 {

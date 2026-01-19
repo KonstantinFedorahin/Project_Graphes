@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Input;
 
 namespace GraphBuilder.UI.Controls;
 
@@ -17,17 +18,109 @@ public class CoordinatePlane : Control
         set => SetValue(PointsProperty, value);
     }
 
-    public double Scale { get; set; } = 50; // пикселей на единицу
-    public Point Offset { get; set; } = new(0, 0);
+    public static readonly StyledProperty<double> ScaleProperty =
+    AvaloniaProperty.Register<CoordinatePlane, double>(nameof(Scale), 50);
+
+    public static readonly StyledProperty<Point> OffsetProperty =
+        AvaloniaProperty.Register<CoordinatePlane, Point>(nameof(Offset));
+    
+    public static readonly StyledProperty<IBrush?> BackgroundProperty =
+    AvaloniaProperty.Register<CoordinatePlane, IBrush?>(nameof(Background));
+
+    public IBrush? Background
+    {
+        get => GetValue(BackgroundProperty);
+        set => SetValue(BackgroundProperty, value);
+    }
+
+    public double Scale
+    {
+        get => GetValue(ScaleProperty);
+        set => SetValue(ScaleProperty, value);
+    }
+
+    public Point Offset
+    {
+        get => GetValue(OffsetProperty);
+        set => SetValue(OffsetProperty, value);
+    }
 
     static CoordinatePlane()
     {
-        // перерисовываться при изменении Points
-        AffectsRender<CoordinatePlane>(PointsProperty);
+        AffectsRender<CoordinatePlane>(
+            PointsProperty,
+            ScaleProperty,
+            OffsetProperty);
     }
+    private Point? _lastPanPoint;
+
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+
+        if (e.GetCurrentPoint(this).Properties.IsMiddleButtonPressed ||
+            e.GetCurrentPoint(this).Properties.IsRightButtonPressed)
+        {
+            _lastPanPoint = e.GetPosition(this);
+            e.Pointer.Capture(this);
+        }
+    }
+
+    protected override void OnPointerReleased(PointerReleasedEventArgs e)
+    {
+        base.OnPointerReleased(e);
+        _lastPanPoint = null;
+        e.Pointer.Capture(null);
+    }
+
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+
+        if (_lastPanPoint is null)
+            return;
+
+        var current = e.GetPosition(this);
+        var delta = current - _lastPanPoint.Value;
+
+        Offset = new Point(
+            Offset.X + delta.X,
+            Offset.Y + delta.Y);
+
+        _lastPanPoint = current;
+    }
+
+    protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
+    {
+        base.OnPointerWheelChanged(e);
+
+        const double zoomFactor = 1.1;
+
+        var mousePos = e.GetPosition(this);
+        var oldScale = Scale;
+
+        if (e.Delta.Y > 0)
+            Scale *= zoomFactor;
+        else
+            Scale /= zoomFactor;
+
+        Scale = Math.Clamp(Scale, 10, 500);
+
+        // Adjust offset so zoom happens around mouse position
+        var scaleRatio = Scale / oldScale;
+
+        Offset = new Point(
+            mousePos.X - scaleRatio * (mousePos.X - Offset.X),
+            mousePos.Y - scaleRatio * (mousePos.Y - Offset.Y)
+        );
+    }
+
 
     public override void Render(DrawingContext context)
     {
+        if (Background != null)
+        context.FillRectangle(Background, Bounds);
+        
         base.Render(context);
 
         var bounds = Bounds;

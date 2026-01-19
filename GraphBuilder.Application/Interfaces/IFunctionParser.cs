@@ -1,6 +1,6 @@
-using GraphBuilder.Core.Models;
+using GraphBuilder.Domain.Models;
 
-namespace GraphBuilder.Core.Services;
+namespace GraphBuilder.Application.Interfaces;
 
 public interface IFunctionParser
 {
@@ -12,6 +12,5 @@ public interface IFunctionParser
         double maxX,
         double step);
 
-    // New method for expression validation
     bool ValidateExpression(string expression, out string errorMessage);
 }

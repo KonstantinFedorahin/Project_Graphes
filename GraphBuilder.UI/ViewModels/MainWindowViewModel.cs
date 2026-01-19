@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reactive;
 using System.Runtime.CompilerServices;
-using GraphBuilder.Core.Models;
-using GraphBuilder.Core.Services;
+using GraphBuilder.Domain.Models;
+using GraphBuilder.Application.Interfaces;
 using GraphBuilder.UI.Controls;
 using ReactiveUI;
 using Avalonia;
@@ -61,9 +61,9 @@ public class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    public MainWindowViewModel()
+    public MainWindowViewModel(IFunctionParser functionParser)
     {
-        _functionParser = new MathExpressionParser();
+        _functionParser = functionParser;
 
         ButtonCommand = ReactiveCommand.Create(() =>
         {

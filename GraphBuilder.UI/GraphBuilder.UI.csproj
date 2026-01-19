@@ -18,10 +18,13 @@
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2" />
     <PackageReference Include="ReactiveUI.Avalonia" Version="11.3.8" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GraphBuilder.Core\GraphBuilder.Core.csproj" />
+    <ProjectReference Include="..\GraphBuilder.Application\GraphBuilder.Application.csproj" />
+    <ProjectReference Include="..\GraphBuilder.Infrastructure\GraphBuilder.Infrastructure.csproj" />
+    <ProjectReference Include="..\GraphBuilder.Domain\GraphBuilder.Domain.csproj" />
   </ItemGroup>
 </Project>
