@@ -17,6 +17,7 @@ namespace GraphBuilder.UI.ViewModels;
 public class MainWindowViewModel : INotifyPropertyChanged
 {
     private readonly IFunctionParser _functionParser;
+    private readonly ICalculatePoints _graphCalculator;
     private string _currentExpression = string.Empty;
     private string _errorMessage = string.Empty;
     private IReadOnlyList<Point>? _points;
@@ -61,9 +62,10 @@ public class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    public MainWindowViewModel(IFunctionParser functionParser)
+    public MainWindowViewModel(IFunctionParser functionParser, ICalculatePoints graphCalculator)
     {
         _functionParser = functionParser;
+        _graphCalculator = graphCalculator;
 
         ButtonCommand = ReactiveCommand.Create(() =>
         {
@@ -96,10 +98,10 @@ public class MainWindowViewModel : INotifyPropertyChanged
                 }
 
                 // Calculate points
-                var calculated = _functionParser.CalculatePoints(
+                var calculated = _graphCalculator.CalculatePoints(
                     function,
                     -20,
-                    5,
+                    20,
                     0.5f
                 ).ToList();
 
