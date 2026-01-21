@@ -1,6 +1,6 @@
 using GraphBuilder.Domain.Models;
 
-namespace GraphBuilder.Application.Interfaces;
+namespace GraphBuilder.Domain.Interfaces;
 
 public interface ICalculatePoints
 {

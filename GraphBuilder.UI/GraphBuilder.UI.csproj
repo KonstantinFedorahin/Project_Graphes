@@ -22,7 +22,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\GraphBuilder.Application\GraphBuilder.Application.csproj" />
 		<ProjectReference Include="..\GraphBuilder.Infrastructure\GraphBuilder.Infrastructure.csproj" />
 		<ProjectReference Include="..\GraphBuilder.Domain\GraphBuilder.Domain.csproj" />
 	</ItemGroup>

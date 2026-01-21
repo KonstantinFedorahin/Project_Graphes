@@ -5,7 +5,7 @@ using System.ComponentModel;
 using System.Reactive;
 using System.Runtime.CompilerServices;
 using GraphBuilder.Domain.Models;
-using GraphBuilder.Application.Interfaces;
+using GraphBuilder.Domain.Interfaces;
 using GraphBuilder.UI.Controls;
 using ReactiveUI;
 using Avalonia;
@@ -16,38 +16,20 @@ namespace GraphBuilder.UI.ViewModels;
 
 public class MainWindowViewModel : INotifyPropertyChanged
 {
-    private readonly IFunctionParser _functionParser;
-    private readonly ICalculatePoints _graphCalculator;
+    private readonly IBuildGraphService _buildGraphService;
+
     private string _currentExpression = string.Empty;
     private string _errorMessage = string.Empty;
     private IReadOnlyList<Point>? _points;
 
-    public IReadOnlyList<Point>? Points
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public MainWindowViewModel(IBuildGraphService buildGraphService)
     {
-        get => _points;
-        set
-        {
-            _points = value;
-            OnPropertyChanged();
-        }
+        _buildGraphService = buildGraphService;
+
+        ButtonCommand = ReactiveCommand.Create(ExecuteBuildGraph);
     }
-
-    public string ErrorMessage
-    {
-        get => _errorMessage;
-        set
-        {
-            if (_errorMessage != value)
-            {
-                _errorMessage = value;
-                OnPropertyChanged();
-            }
-        }
-    }
-
-    public ReactiveCommand<Unit, Unit> ButtonCommand { get; }
-
-    public ObservableCollection<Function> Functions { get; } = new();
 
     public string CurrentExpression
     {
@@ -62,70 +44,56 @@ public class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    public MainWindowViewModel(IFunctionParser functionParser, ICalculatePoints graphCalculator)
+    public string ErrorMessage
     {
-        _functionParser = functionParser;
-        _graphCalculator = graphCalculator;
-
-        ButtonCommand = ReactiveCommand.Create(() =>
+        get => _errorMessage;
+        private set
         {
-            // Clear previous error
-            ErrorMessage = string.Empty;
-
-            // Check if expression is empty
-            if (string.IsNullOrWhiteSpace(CurrentExpression))
+            if (_errorMessage != value)
             {
-                ErrorMessage = "Please enter a mathematical expression";
-                return;
+                _errorMessage = value;
+                OnPropertyChanged();
             }
+        }
+    }
 
-            // Validate expression
-            if (!_functionParser.ValidateExpression(CurrentExpression, out string validationError))
-            {
-                ErrorMessage = $"Invalid expression: {validationError}";
-                return;
-            }
+    public IReadOnlyList<Point>? Points
+    {
+        get => _points;
+        private set
+        {
+            _points = value;
+            OnPropertyChanged();
+        }
+    }
 
-            try
-            {
-                // Parse the expression
-                var function = _functionParser.Parse(CurrentExpression);
+    public ObservableCollection<Function> Functions { get; } = new();
 
-                if (function == null)
-                {
-                    ErrorMessage = "Failed to parse the expression";
-                    return;
-                }
+    public ReactiveCommand<Unit, Unit> ButtonCommand { get; }
+    
+    private void ExecuteBuildGraph()
+    {
+        ErrorMessage = string.Empty;
 
-                // Calculate points
-                var calculated = _graphCalculator.CalculatePoints(
-                    function,
-                    -20,
-                    20,
-                    0.5f
-                ).ToList();
+        var result = _buildGraphService.Execute(new BuildGraphRequest
+        {
+            Expression = CurrentExpression,
+            From = -20,
+            To = 20,
+            Step = 0.5f
+        });
 
-                // Check if we got any points
-                if (!calculated.Any())
-                {
-                    ErrorMessage = "No valid points could be calculated for this expression";
-                    return;
-                }
+        if (!result.IsSuccess)
+        {
+            ErrorMessage = result.ErrorMessage!;
+            return;
+        }
 
-                // Update points for rendering
-                Points = calculated
-                    .Select(p => new Point(p.X, p.Y))
-                    .ToList();
+        Points = result.Points!
+            .Select(p => new Point(p.X, p.Y))
+            .ToList();
 
-                // Add to functions list if successful
-                AddFunction();
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = $"Error: {ex.Message}";
-            }
-        },
-        outputScheduler: RxApp.MainThreadScheduler);
+        AddFunction();
     }
 
     public void AddFunction()
@@ -136,8 +104,6 @@ public class MainWindowViewModel : INotifyPropertyChanged
             CurrentExpression = string.Empty;
         }
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
 
     protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {

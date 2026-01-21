@@ -6,7 +6,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\GraphBuilder.Application\GraphBuilder.Application.csproj" />
 		<ProjectReference Include="..\GraphBuilder.Domain\GraphBuilder.Domain.csproj" />
 		<PackageReference Include="Avalonia" Version="11.3.9" />
 		<PackageReference Include="MathParser.org-mXparser" Version="6.1.0" />

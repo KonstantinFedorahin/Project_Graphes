@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using GraphBuilder.Domain.Models;
-using GraphBuilder.Application.Interfaces;
+using GraphBuilder.Domain.Interfaces;
 using org.mariuszgromada.math.mxparser;
 
 namespace GraphBuilder.Infrastructure.Parsing;

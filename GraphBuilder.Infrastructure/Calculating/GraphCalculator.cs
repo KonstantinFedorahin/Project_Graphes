@@ -1,5 +1,5 @@
 using DynamicData;
-using GraphBuilder.Application.Interfaces;
+using GraphBuilder.Domain.Interfaces;
 using GraphBuilder.Domain.Models;
 
 
