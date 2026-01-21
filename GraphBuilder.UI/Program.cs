@@ -1,9 +1,6 @@
 ﻿using Avalonia;
 using ReactiveUI.Avalonia;
 using System;
-using GraphBuilder.Application;
-using GraphBuilder.Infrastructure;
-using GraphBuilder.UI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GraphBuilder.UI;
@@ -17,10 +14,7 @@ class Program
     {
         var services = new ServiceCollection();
 
-        services.AddApplication();
-        services.AddInfrastructure();
-
-        services.AddTransient<MainWindowViewModel>();
+        services.ConfigureServices();
 
         Services = services.BuildServiceProvider();
 
