@@ -11,6 +11,8 @@ using ReactiveUI;
 using Avalonia;
 using Avalonia.Threading;
 using System.Linq;
+using GraphBuilder.UI.Rendering;
+
 
 namespace GraphBuilder.UI.ViewModels;
 
@@ -20,7 +22,7 @@ public class MainWindowViewModel : INotifyPropertyChanged
 
     private string _currentExpression = string.Empty;
     private string _errorMessage = string.Empty;
-    private IReadOnlyList<Point>? _points;
+    public ObservableCollection<GraphRenderData> Graphs { get; } = new();
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -57,19 +59,10 @@ public class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    public IReadOnlyList<Point>? Points
-    {
-        get => _points;
-        private set
-        {
-            _points = value;
-            OnPropertyChanged();
-        }
-    }
-
     public ObservableCollection<Function> Functions { get; } = new();
 
     public ReactiveCommand<Unit, Unit> ButtonCommand { get; }
+
     
     private void ExecuteBuildGraph()
     {
@@ -89,12 +82,20 @@ public class MainWindowViewModel : INotifyPropertyChanged
             return;
         }
 
-        Points = result.Points!
-            .Select(p => new Point(p.X, p.Y))
-            .ToList();
+        var graph = result.Graph!;
+
+        var renderData = new GraphRenderData
+        {
+            Points = graph.Points
+                .Select(p => new Point(p.X, p.Y))
+                .ToList()
+        };
+
+        Graphs.Add(renderData);
 
         AddFunction();
     }
+
 
     public void AddFunction()
     {

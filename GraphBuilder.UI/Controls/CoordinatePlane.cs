@@ -1,21 +1,23 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Input;
+using GraphBuilder.UI.Rendering;
 
 namespace GraphBuilder.UI.Controls;
 
 public class CoordinatePlane : Control
 {
-    public static readonly StyledProperty<IReadOnlyList<Point>?> PointsProperty =
-        AvaloniaProperty.Register<CoordinatePlane, IReadOnlyList<Point>?>(nameof(Points));
+    public static readonly StyledProperty<IReadOnlyList<GraphRenderData>?> GraphsProperty =
+    AvaloniaProperty.Register<CoordinatePlane, IReadOnlyList<GraphRenderData>?>(nameof(Graphs));
 
-    public IReadOnlyList<Point>? Points
+    public IReadOnlyList<GraphRenderData>? Graphs
     {
-        get => GetValue(PointsProperty);
-        set => SetValue(PointsProperty, value);
+        get => GetValue(GraphsProperty);
+        set => SetValue(GraphsProperty, value);
     }
 
     public static readonly StyledProperty<double> ScaleProperty =
@@ -48,7 +50,7 @@ public class CoordinatePlane : Control
     static CoordinatePlane()
     {
         AffectsRender<CoordinatePlane>(
-            PointsProperty,
+            GraphsProperty,
             ScaleProperty,
             OffsetProperty);
     }
@@ -115,6 +117,32 @@ public class CoordinatePlane : Control
         );
     }
 
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        if (change.Property == GraphsProperty)
+        {
+            if (change.OldValue is IReadOnlyList<GraphRenderData> oldList &&
+                oldList is INotifyCollectionChanged oldNotify)
+            {
+                oldNotify.CollectionChanged -= OnGraphsCollectionChanged;
+            }
+
+            if (change.NewValue is IReadOnlyList<GraphRenderData> newList &&
+                newList is INotifyCollectionChanged newNotify)
+            {
+                newNotify.CollectionChanged += OnGraphsCollectionChanged;
+            }
+
+            InvalidateVisual();
+        }
+    }
+
+    private void OnGraphsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        InvalidateVisual();
+    }
 
     public override void Render(DrawingContext context)
     {
@@ -132,30 +160,34 @@ public class CoordinatePlane : Control
         DrawGrid(context, bounds, center);
         DrawAxes(context, bounds, center);
 
-        if (Points is null || Points.Count < 2)
+        if (Graphs is null || Graphs.Count < 1)
             return;
 
         var geometry = new StreamGeometry();
 
         using (var ctx = geometry.Open())
         {
-            bool first = true;
-
-            foreach (var p in Points)
+            foreach (var graph in Graphs)
             {
-                var px = center.X + p.X * Scale;
-                var py = center.Y - p.Y * Scale;
-
-                if (first)
+                bool first = true;
+            
+                foreach (var p in graph.Points)
                 {
-                    ctx.BeginFigure(new Point(px, py), false);
-                    first = false;
-                }
-                else
-                {
-                    ctx.LineTo(new Point(px, py));
+                    var px = center.X + p.X * Scale;
+                    var py = center.Y - p.Y * Scale;
+            
+                    if (first)
+                    {
+                        ctx.BeginFigure(new Point(px, py), false);
+                        first = false;
+                    }
+                    else
+                    {
+                        ctx.LineTo(new Point(px, py));
+                    }
                 }
             }
+
         }
 
         context.DrawGeometry(null, new Pen(Brushes.Red, 2), geometry);

@@ -46,10 +46,16 @@ public class BuildGraphService : IBuildGraphService
             return Fail("No points calculated");
         }
 
+        var graph = new Graph
+        {
+            Expression = request.Expression,
+            Points = points
+        };
+
         return new BuildGraphResult
         {
             IsSuccess = true,
-            Points = points
+            Graph = graph
         };
     }
 
